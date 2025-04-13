@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Notice Board</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 20px;
+        }
+        .banner {
+            background-color: #3498db;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+        }
+        .banner span {
+            display: inline-block;
+            padding-left: 100%;
+            animation: marquee 10s linear infinite;
+        }
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .notice-card {
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            position: relative;
+            transition: transform 0.3s;
+        }
+        .notice-card:hover {
+            transform: translateY(-5px);
+        }
+        .notice-card h2 {
+            color: #2c3e50;
+            margin: 0 0 10px;
+            font-size: 20px;
+        }
+        .notice-card .date {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .notice-card p {
+            color: #34495e;
+            font-size: 16px;
+            margin: 0 0 20px;
+        }
+        .notice-card button {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .notice-card button:hover {
+            background-color: #c0392b;
+        }
+        .add-notice {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 20px 0;
+            display: block;
+            margin-left: auto;
+        }
+        .add-notice:hover {
+            background-color: #27ae60;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 400px;
+            text-align: center;
+        }
+        .modal-content input, .modal-content textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .modal-content button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .modal-content button:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="banner">
+        <span>Information Technology Department  Notice Board - Designed by Prof. Rahul M. Samant ( HOD - IT ) </span>
+    </div>
+    <button class="add-notice" onclick="openAddModal()">Add Notice</button>
+    <div class="container" id="noticeContainer"></div>
+
+    <!-- Add Notice Modal -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <h2>Add New Notice</h2>
+            <input type="text" id="authPassword" placeholder="Enter Password">
+            <input type="text" id="noticeHeading" placeholder="Heading">
+            <input type="date" id="noticeDate">
+            <textarea id="noticeDescription" placeholder="Description"></textarea>
+            <button onclick="addNotice()">Submit</button>
+            <button onclick="closeAddModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Remove Notice Modal -->
+    <div id="removeModal" class="modal">
+        <div class="modal-content">
+            <h2>Authorize Removal</h2>
+            <input type="text" id="removePassword" placeholder="Enter Password">
+            <button onclick="confirmRemove()">Submit</button>
+            <button onclick="closeRemoveModal()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        const password = "@dmin123"; // Simple password for authorization
+        let notices = JSON.parse(localStorage.getItem('notices')) || [];
+        let removeIndex = null;
+
+        // Function to format date as DDD, DD - MM - YYYY
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayName = days[date.getDay()];
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${dayName}, ${day} - ${month} - ${year}`;
+        }
+
+
+        function renderNotices() {
+            const container = document.getElementById('noticeContainer');
+            container.innerHTML = '';
+            notices.forEach((notice, index) => {
+                const card = document.createElement('div');
+                card.className = 'notice-card';
+                card.innerHTML = `
+                    <h2>${notice.heading}</h2>
+                    <div class="date">${formatDate(notice.date)}</div>
+                    <p>${notice.description}</p>
+                    <button onclick="openRemoveModal(${index})">Remove</button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openAddModal() {
+            document.getElementById('addModal').style.display = 'flex';
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').style.display = 'none';
+            clearAddForm();
+        }
+
+        function clearAddForm() {
+            document.getElementById('authPassword').value = '';
+            document.getElementById('noticeHeading').value = '';
+            document.getElementById('noticeDate').value = '';
+            document.getElementById('noticeDescription').value = '';
+        }
+
+        function addNotice() {
+            const authPassword = document.getElementById('authPassword').value;
+            const heading = document.getElementById('noticeHeading').value;
+            const date = document.getElementById('noticeDate').value;
+            const description = document.getElementById('noticeDescription').value;
+
+            if (authPassword !== password) {
+                alert('Incorrect password!');
+                return;
+            }
+
+            if (heading && date && description) {
+                notices.push({ heading, date, description });
+                localStorage.setItem('notices', JSON.stringify(notices));
+                renderNotices();
+                closeAddModal();
+            } else {
+                alert('Please fill all fields!');
+            }
+        }
+
+        function openRemoveModal(index) {
+            removeIndex = index;
+            document.getElementById('removeModal').style.display = 'flex';
+        }
+
+        function closeRemoveModal() {
+            document.getElementById('removeModal').style.display = 'none';
+            document.getElementById('removePassword').value = '';
+            removeIndex = null;
+        }
+
+        function confirmRemove() {
+            const removePassword = document.getElementById('removePassword').value;
+            if (removePassword === password) {
+                notices.splice(removeIndex, 1);
+                localStorage.setItem('notices', JSON.stringify(notices));
+                renderNotices();
+                closeRemoveModal();
+            } else {
+                alert('Incorrect password!');
+            }
+        }
+
+        // Initial render
+        renderNotices();
+    </script>
+</body>
+</html>
